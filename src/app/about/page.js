@@ -88,7 +88,7 @@ export default function AboutPage() {
             <li>
               On first load, the app seeds the database by reading{" "}
               <code className="bg-gray-100 px-1 rounded text-sm">Artworks.json</code>{" "}
-              and inserting 1,000 artworks into MongoDB.
+              and inserting 10,000 artworks into MongoDB.
             </li>
             <li>
               The gallery page fetches paginated artworks from{" "}
