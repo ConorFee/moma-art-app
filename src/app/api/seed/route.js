@@ -20,8 +20,7 @@ export async function GET() {
   const fileData = await fs.readFile(filePath, "utf-8");
   const artworks = JSON.parse(fileData);
 
-  // Only take the first 1000 items for development (as assignment recommends)
-  const subset = artworks.slice(0, 1000);
+  const subset = artworks.slice(0, 10000);
 
   // Insert all artworks into MongoDB in one go
   // insertMany is much faster than saving one at a time
