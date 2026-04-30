@@ -13,6 +13,12 @@ export default function Home() {
   const [loading, setLoading] = useState(true); // loading spinner flag
   const [seeded, setSeeded] = useState(false); // has the database been seeded?
 
+  // Filter and sort state
+  const [classification, setClassification] = useState("");
+  const [department, setDepartment] = useState("");
+  const [sortBy, setSortBy] = useState("Title");
+  const [sortOrder, setSortOrder] = useState("asc");
+
   // Form state for adding/editing artworks
   const [showForm, setShowForm] = useState(false);
   const [editingArtwork, setEditingArtwork] = useState(null);
@@ -35,20 +41,25 @@ export default function Home() {
     seed();
   }, []);
 
-  // Fetch artworks whenever the page number, search term, or seed status changes
+  // Fetch artworks whenever page, seed, filters, or sort changes
   useEffect(() => {
     if (!seeded) return;
     fetchArtworks();
-  }, [page, seeded]);
+  }, [page, seeded, classification, department, sortBy, sortOrder]);
 
   // Fetch artworks from our API
   async function fetchArtworks(searchTerm = search) {
     setLoading(true);
-    // axios.get() returns { data: { artworks, total, ... } }
-    // No need to call .json() like with fetch — axios does it automatically
-    const { data } = await axios.get(
-      `/api/artworks?page=${page}&limit=12&search=${searchTerm}`
-    );
+    const params = new URLSearchParams({
+      page,
+      limit: 12,
+      search: searchTerm,
+      classification,
+      department,
+      sortBy,
+      sortOrder,
+    });
+    const { data } = await axios.get(`/api/artworks?${params}`);
     setArtworks(data.artworks);
     setTotalPages(data.totalPages);
     setTotal(data.total);
@@ -60,6 +71,14 @@ export default function Home() {
     e.preventDefault();
     setPage(1);
     fetchArtworks(search);
+  }
+
+  // Handle filter/sort changes — reset to page 1 automatically
+  function handleFilterChange(setter) {
+    return (e) => {
+      setter(e.target.value);
+      setPage(1);
+    };
   }
 
   // Handle form input changes
@@ -153,6 +172,80 @@ export default function Home() {
             + Add Artwork
           </button>
         </div>
+      </div>
+
+      {/* Filter and sort controls */}
+      <div className="flex flex-wrap gap-3 mb-8">
+        {/* Classification filter */}
+        <select
+          value={classification}
+          onChange={handleFilterChange(setClassification)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">All Classifications</option>
+          <option value="Painting">Painting</option>
+          <option value="Drawing">Drawing</option>
+          <option value="Photography">Photography</option>
+          <option value="Print">Print</option>
+          <option value="Illustrated Book">Illustrated Book</option>
+          <option value="Sculpture">Sculpture</option>
+          <option value="Design">Design</option>
+          <option value="Film">Film</option>
+          <option value="Video">Video</option>
+          <option value="Architecture">Architecture</option>
+        </select>
+
+        {/* Department filter */}
+        <select
+          value={department}
+          onChange={handleFilterChange(setDepartment)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">All Departments</option>
+          <option value="Painting & Sculpture">Painting &amp; Sculpture</option>
+          <option value="Drawings & Prints">Drawings &amp; Prints</option>
+          <option value="Photography">Photography</option>
+          <option value="Architecture & Design">Architecture &amp; Design</option>
+          <option value="Film">Film</option>
+          <option value="Media and Performance">Media and Performance</option>
+        </select>
+
+        {/* Sort field */}
+        <select
+          value={sortBy}
+          onChange={handleFilterChange(setSortBy)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="Title">Sort by Title</option>
+          <option value="Date">Sort by Date</option>
+          <option value="Artist">Sort by Artist</option>
+        </select>
+
+        {/* Sort direction */}
+        <select
+          value={sortOrder}
+          onChange={handleFilterChange(setSortOrder)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="asc">A → Z / Oldest</option>
+          <option value="desc">Z → A / Newest</option>
+        </select>
+
+        {/* Clear filters button — only shown when a filter is active */}
+        {(classification || department || sortBy !== "Title" || sortOrder !== "asc") && (
+          <button
+            onClick={() => {
+              setClassification("");
+              setDepartment("");
+              setSortBy("Title");
+              setSortOrder("asc");
+              setPage(1);
+            }}
+            className="text-sm text-red-500 hover:text-red-700 px-3 py-2 rounded-lg border border-red-200 hover:bg-red-50 transition-colors"
+          >
+            Clear Filters
+          </button>
+        )}
       </div>
 
       {/* Add/Edit form modal */}

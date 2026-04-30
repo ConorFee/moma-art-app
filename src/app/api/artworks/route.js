@@ -1,34 +1,45 @@
 import connectDB from "@/lib/mongodb";
 import Artwork from "@/lib/Artwork";
 
-// GET /api/artworks — Fetch artworks (with optional search)
-// Same idea as your lab's: app.get('/users', async (req, res) => { ... })
+// GET /api/artworks — Fetch artworks (with optional search, filter, sort)
 export async function GET(request) {
   await connectDB();
 
-  // Read query parameters from the URL (e.g. /api/artworks?page=2&search=picasso)
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get("page")) || 1;
   const limit = parseInt(searchParams.get("limit")) || 20;
   const search = searchParams.get("search") || "";
+  const classification = searchParams.get("classification") || "";
+  const department = searchParams.get("department") || "";
+  const sortBy = searchParams.get("sortBy") || "Title";
+  const sortOrder = searchParams.get("sortOrder") === "desc" ? -1 : 1;
 
-  // Build a filter — if the user searched for something, look in Title and Artist
-  let filter = {};
+  // Start with an array of conditions we'll combine with $and
+  const conditions = [];
+
   if (search) {
-    filter = {
+    conditions.push({
       $or: [
         { Title: { $regex: search, $options: "i" } },
         { Artist: { $regex: search, $options: "i" } },
       ],
-    };
+    });
   }
 
-  // Get total count (for pagination info)
+  if (classification) {
+    conditions.push({ Classification: { $regex: `^${classification}$`, $options: "i" } });
+  }
+
+  if (department) {
+    conditions.push({ Department: { $regex: `^${department}$`, $options: "i" } });
+  }
+
+  const filter = conditions.length > 0 ? { $and: conditions } : {};
+
   const total = await Artwork.countDocuments(filter);
 
-  // Fetch the artworks for this page
-  // .skip() jumps past previous pages, .limit() caps how many we return
   const artworks = await Artwork.find(filter)
+    .sort({ [sortBy]: sortOrder })
     .skip((page - 1) * limit)
     .limit(limit);
 
